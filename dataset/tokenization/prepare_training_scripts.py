@@ -30,10 +30,10 @@ BATCH_SIZES = {'5mb': 4, '10mb': 8,
                '100mb': 32, '1000mb': 64}
 TOKENS_PER_SEQUENCE = MAX_SEQ_LEN  # Must also be set in model config.
 
-OUTPUT_DIR = 'training_scripts'
-MODELS_OUTDIR = 'model_weights/'
-DATASETS_DIR = 'tokenized_data_split'
-TOKENIZERS_DIR = 'tokenization/monolingual'
+OUTPUT_DIR = 'dataset/training_scripts'
+MODELS_OUTDIR = 'dataset/model_weights/'
+DATASETS_DIR = 'dataset/raw/tokenized_data_split'
+TOKENIZERS_DIR = 'dataset/tokenization/monolingual'
 MAX_BATCH_PER_DEVICE = 8  # How many fit on one device.
 
 # A tsv mapping model to training token count, e.g.:
@@ -113,6 +113,7 @@ for dataset_size in ['5mb', '10mb', '100mb', '1000mb']:
         epoch_steps = n_examples_per_epoch / batch_size
         # Determine whether eval set exists.
         train_path = os.path.join(DATASETS_DIR, lang + '_' + dataset_size + '.txt')
+        print(train_path)
         assert os.path.isfile(train_path)
         eval_path = os.path.join(DATASETS_DIR, lang + '_' + dataset_size + '_eval2k.txt')
         if os.path.isfile(eval_path):

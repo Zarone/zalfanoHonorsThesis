@@ -22,7 +22,7 @@ from util.byte_premiums import byte_premiums
 from util.constants import SHUFFLED_TOKENIZED_DATA, TOKENIZERS_DIR
 import csv
 
-OUTPUT_DIR = 'tokenized_data_split'
+OUTPUT_DIR = './dataset/raw/tokenized_data_split'
 TRAIN_SIZES_TOKEN_PATH = './train_sizes_tokens.tsv'
 
 def write_file(lines, lang, suffix_str):

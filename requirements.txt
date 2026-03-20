@@ -1,0 +1,8 @@
+datasets
+huggingface_hub
+bloom-filter2
+protobuf
+accelerate>=0.26.0
+matplotlib
+sentencepiece
+transformers==4.57.3

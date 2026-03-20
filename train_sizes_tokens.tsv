@@ -1,0 +1,13 @@
+dataset	tokens
+eng_latn_100mb	22360064
+eng_latn_1000mb	223831040
+eng_latn_10mb	2343936
+eng_latn_5mb	1222656
+fra_latn_100mb	29289472
+fra_latn_1000mb	292819968
+fra_latn_10mb	2979840
+fra_latn_5mb	1564672
+zho_hans_100mb	23394304
+zho_hans_full	86845440
+zho_hans_10mb	2783232
+zho_hans_5mb	1553408
