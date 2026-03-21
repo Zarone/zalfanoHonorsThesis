@@ -2,3 +2,4 @@
 __pycache__/
 .DS_Store
 model_weights/*
+model_weights_diffusion/*

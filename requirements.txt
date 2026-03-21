@@ -6,3 +6,4 @@ accelerate>=0.26.0
 matplotlib
 sentencepiece
 transformers==4.57.3
+diffusers>=0.27.0
