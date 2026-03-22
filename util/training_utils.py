@@ -29,6 +29,18 @@ from transformers import (
 from util.constants import MAX_SEQ_LEN
 from transformers.trainer_utils import get_last_checkpoint
 
+class RepeatingIterableDataset(torch.utils.data.IterableDataset):
+    def __init__(self, dataset, num_epochs):
+        self.dataset = dataset
+        self.num_epochs = num_epochs
+
+    def __iter__(self):
+        for _ in range(self.num_epochs):
+            for x in self.dataset:
+                yield x
+
+    def __len__(self):
+        return len(self.dataset) * self.num_epochs
 
 @dataclass
 class TrainingSizes:
@@ -87,7 +99,7 @@ class DatasetConfig:
 class HyperparametersConfig:
     """Common hyperparameters for training."""
     warmup_proportion: float = 0.10
-    epochs: int = 1
+    epochs: int = 4
     learning_rate: float = 0.0001
     batch_sizes: Dict[str, int] = field(default_factory=lambda: {
         '5mb': 4, '10mb': 8, '100mb': 32, '1000mb': 64
@@ -125,6 +137,12 @@ def calculate_training_steps(
         max_steps = 100000
     else:
         max_steps = int((total_tokens * epochs) / tokens_per_batch)
+    print(
+        "max_steps", max_steps,
+        "total_tokens", total_tokens,
+        "tokens_per_batch", tokens_per_batch,
+        "epochs", epochs
+    )
     
     warmup_steps = int(max_steps * warmup_proportion)
     return max_steps, warmup_steps
@@ -667,12 +685,13 @@ def iterate_dataset_languages(
 def get_eval_steps(dataset_size: str, max_steps: int) -> int:
     """Get evaluation step frequency based on dataset size."""
     # Evaluate more often for smaller datasets
-    if dataset_size in ['5mb', '10mb']:
-        eval_frequency = 0.1  # Evaluate 10× per training
-    elif dataset_size == '100mb':
-        eval_frequency = 0.05  # Evaluate 5× per training
-    else:  # 1000mb
-        eval_frequency = 0.02  # Evaluate 2× per training
+    eval_frequency = 0.025
+    # if dataset_size in ['5mb', '10mb']:
+    #     eval_frequency = 0.1  # Evaluate 10× per training
+    # elif dataset_size == '100mb':
+    #     eval_frequency = 0.05  # Evaluate 5× per training
+    # else:  # 1000mb
+    #     eval_frequency = 0.02  # Evaluate 2× per training
     
     eval_steps = max(10, int(max_steps * eval_frequency))
     return eval_steps
@@ -795,7 +814,7 @@ def unified_train(
     dropout: bool,
     gradient_accumulation_steps: int = 1,
     batch_size: int = 4,
-    eval_steps: int = 40,
+    eval_steps: int = 10,
     evaluation_type: str = "flores200_perplexity",
     # Model-specific callbacks
     load_config_fn: Callable = None,
@@ -886,6 +905,7 @@ def unified_train(
         sep_token_id=tokenizer.sep_token_id,
         n_examples=override_n_examples
     )
+    train_dataset = RepeatingIterableDataset(train_dataset, epochs)
     
     eval_dataset = None
     if eval_file_path and os.path.isfile(eval_file_path):
@@ -906,6 +926,7 @@ def unified_train(
         eval_strategy = IntervalStrategy.STEPS
         eval_data = eval_dataset
 
+    print('training args epoch', epochs)
     # Training arguments
     args = TrainingArguments(
         adafactor=False,

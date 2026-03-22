@@ -127,6 +127,8 @@ BYTES_PER_MB = 1_000_000
 # maximum size in MB for each language
 max_size = 1_000  # 1 GB
 
+MAX_SEQ_LEN = 1024
+
 OUTPUT_FILE = './dataset/raw/low_resource_dataset/{lang}.txt'
 DEDUPED_FILE = './dataset/raw/low_resource_dataset/{lang}_deduped.txt'
 
@@ -138,8 +140,6 @@ TOKENIZED_DATASET_DIR = './dataset/raw/tokenized_data'
 TOKENIZERS_DIR = 'dataset/tokenization/monolingual'
 
 SHUFFLED_TOKENIZED_DATA = './dataset/raw/shuffled_tokenized_data'
-
-MAX_SEQ_LEN = 1024
 
 EVAL_DATASET = './dataset/raw/flores200_dataset/merged'
 EVAL_DATASET_TOKENIZED = './dataset/raw/flores200_dataset/tokenized'
