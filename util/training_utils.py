@@ -102,7 +102,7 @@ class HyperparametersConfig:
     epochs: int = 4
     learning_rate: float = 0.0001
     batch_sizes: Dict[str, int] = field(default_factory=lambda: {
-        '5mb': 4, '10mb': 8, '100mb': 32, '1000mb': 64
+        '5mb': 4, '10mb': 4, '100mb': 4, '1000mb': 64
     })
 
 
@@ -232,8 +232,8 @@ class HellaSwagCallback(LMTrainingCallback):
             epoch = state.epoch
             total_examples = self.get_total_examples(step)
 
-            dataset = load_dataset("hellaswag", split="validation")
-            dataset = dataset.select(range(min(50, len(dataset))))
+            dataset = load_dataset("hellaswag", split="train")
+            dataset = dataset.select(range(min(100, len(dataset))))
 
             model.eval()
             correct = 0

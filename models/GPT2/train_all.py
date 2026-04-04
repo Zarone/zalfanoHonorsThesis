@@ -20,7 +20,7 @@ from models.GPT2.train import train
 
 
 # GPT2-specific constants
-MAX_BATCH_PER_DEVICE = 2
+MAX_BATCH_PER_DEVICE = 4
 DATASET_SIZES = ['5mb', '10mb', '100mb', '1000mb']
 
 
@@ -64,7 +64,7 @@ def main():
         
         return [
             (True, dropout_outname, f'dropout_GPT_{lang}'),
-            (False, normal_outname, f'GPT_{lang}'),
+            # (False, normal_outname, f'GPT_{lang}'),
         ]
     
     unified_train_all(

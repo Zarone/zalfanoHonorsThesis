@@ -3,6 +3,7 @@ import torch
 from transformers import AutoTokenizer, AlbertTokenizer
 
 from util.training_utils import unified_train
+from util.constants import MAX_SEQ_LEN
 from models.Diffusion.llada_model import DiffusionLanguageModel, DiffusionConfig
 
 seed = 43
@@ -59,6 +60,6 @@ def train(
         evaluation_type=evaluation_type,
         load_config_fn=load_config,
         load_model_fn=load_model,
-        block_size=512,  # Diffusion max position embeddings
+        block_size=MAX_SEQ_LEN,  # Diffusion max position embeddings
         seed=seed,
     )
