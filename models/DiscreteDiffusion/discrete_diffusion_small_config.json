@@ -1,12 +1,12 @@
 {
-  "model_type": "diffusion_lm",
+  "model_type": "discrete_diffusion_lm",
   "architectures": [
-    "DiffusionLanguageModel"
+    "DiscreteDiffusionLanguageModel"
   ],
-  "hidden_size": 768,
-  "num_hidden_layers": 12,
-  "num_attention_heads": 12,
-  "intermediate_size": 3072,
+  "hidden_size": 384,
+  "num_hidden_layers": 6,
+  "num_attention_heads": 6,
+  "intermediate_size": 1536,
   "hidden_act": "gelu",
   "hidden_dropout_prob": 0.1,
   "attention_probs_dropout_prob": 0.1,
@@ -17,7 +17,7 @@
   "n_positions": 1024,
   "num_diffusion_steps": 50,
   "diffusion_schedule": "linear",
-  "noise_scale": 1.0,
+  "mask_token_id": -1,
   "learning_rate": 0.0001,
   "use_cache": false
 }

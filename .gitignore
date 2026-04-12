@@ -3,3 +3,6 @@ __pycache__/
 .DS_Store
 model_weights/*
 model_weights_diffusion/*
+_model_weights_diffusion/*
+model_weights_discrete_diffusion/*
+model_weights_continuous_diffusion/*

@@ -8,6 +8,7 @@ from transformers import (
 )
 
 from util.training_utils import unified_train
+from util.constants import MAX_SEQ_LEN
 
 seed = 43
 
@@ -145,6 +146,6 @@ def train(
         evaluation_type=evaluation_type,
         load_config_fn=load_config,
         load_model_fn=load_model,
-        block_size=2048,  # GPT2 max position embeddings
+        block_size=MAX_SEQ_LEN,  # GPT2 max position embeddings
         seed=seed,
     )

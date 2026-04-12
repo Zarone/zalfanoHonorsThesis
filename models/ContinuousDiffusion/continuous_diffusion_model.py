@@ -1,9 +1,8 @@
 """
-LlaDA-style Diffusion Language Model Implementation
+Continuous Diffusion Language Model Implementation (Embedding-Space Diffusion)
 
-This module implements a diffusion-based language model inspired by LlaDA (Latent Language 
-Diffusion) that generates token embeddings through an iterative denoising process.
-Both discrete-time (DDIM) and continuous-time (flow matching) variants are supported.
+This module implements a diffusion-based language model that generates token embeddings
+through an iterative denoising process in continuous embedding space (DDIM-style).
 """
 
 import torch
@@ -16,10 +15,10 @@ from transformers.modeling_outputs import CausalLMOutputWithPast
 
 
 @dataclass
-class DiffusionConfig(PretrainedConfig):
-    """Configuration for Diffusion Language Model."""
+class ContinuousDiffusionConfig(PretrainedConfig):
+    """Configuration for Continuous Diffusion Language Model."""
     
-    model_type = "diffusion_lm"
+    model_type = "continuous_diffusion_lm"
     
     # Architecture
     hidden_size: int = 768
@@ -120,7 +119,7 @@ class EmbeddingProjection(nn.Module):
 class DenoisingNetwork(nn.Module):
     """Transformer-based denoising network (U-Net style architecture)."""
     
-    def __init__(self, config: DiffusionConfig):
+    def __init__(self, config: ContinuousDiffusionConfig):
         super().__init__()
         
         # Pre-layer norm architecture
@@ -201,17 +200,17 @@ class DenoisingNetwork(nn.Module):
         return x_t + x
 
 
-class DiffusionLanguageModel(PreTrainedModel):
+class ContinuousDiffusionLanguageModel(PreTrainedModel):
     """
-    LlaDA-inspired Diffusion Language Model.
+    Continuous Diffusion Language Model.
     
-    Uses an iterative denoising process to generate token embeddings,
+    Uses an iterative denoising process to generate token embeddings in continuous space,
     which are then projected to vocabulary logits.
     """
     
-    config_class = DiffusionConfig
+    config_class = ContinuousDiffusionConfig
     
-    def __init__(self, config: DiffusionConfig):
+    def __init__(self, config: ContinuousDiffusionConfig):
         super().__init__(config)
         
         self.config = config
@@ -268,7 +267,7 @@ class DiffusionLanguageModel(PreTrainedModel):
         **kwargs
     ) -> Union[torch.Tensor, CausalLMOutputWithPast]:
         """
-        Forward pass for diffusion language model.
+        Forward pass for continuous diffusion language model.
         
         During training:
             - Encode input tokens to embeddings

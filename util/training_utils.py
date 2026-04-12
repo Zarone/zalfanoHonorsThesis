@@ -99,7 +99,7 @@ class DatasetConfig:
 class HyperparametersConfig:
     """Common hyperparameters for training."""
     warmup_proportion: float = 0.10
-    epochs: int = 4
+    epochs: int = 6
     learning_rate: float = 0.0001
     batch_sizes: Dict[str, int] = field(default_factory=lambda: {
         '5mb': 4, '10mb': 4, '100mb': 4, '1000mb': 64
@@ -233,7 +233,7 @@ class HellaSwagCallback(LMTrainingCallback):
             total_examples = self.get_total_examples(step)
 
             dataset = load_dataset("hellaswag", split="train")
-            dataset = dataset.select(range(min(100, len(dataset))))
+            dataset = dataset.select(range(min(500, len(dataset))))
 
             model.eval()
             correct = 0
@@ -260,9 +260,11 @@ class HellaSwagCallback(LMTrainingCallback):
                 predicted_idx = np.argmax(likelihoods)
                 if predicted_idx == label:
                     correct += 1
+            print('correct', correct)
+            print('len(dataset)', len(dataset))
 
             accuracy = correct / len(dataset) if len(dataset) > 0 else 0.0
-            
+
             record = {
                 "step": step,
                 "epoch": epoch,
@@ -956,7 +958,7 @@ def unified_train(
         per_device_train_batch_size=batch_size,
         remove_unused_columns=False,
         resume_from_checkpoint=last_checkpoint,
-        save_steps=500,
+        save_steps=200,
         save_strategy=IntervalStrategy.STEPS,
         save_total_limit=2,
         seed=seed,

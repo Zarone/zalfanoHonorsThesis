@@ -1,12 +1,13 @@
 """
-Visualize comparison between Autoregressive (GPT2) and Diffusion models.
+Visualize comparison between Autoregressive (GPT2), Continuous Diffusion, and Discrete Diffusion models.
 
 Creates overlapping graphs with perplexity and HellaSwag accuracy side by side,
 organized by dataset size and language.
 
 Colors:
   - Red: Autoregressive (GPT2)
-  - Blue: Diffusion
+  - Blue: Continuous Diffusion
+  - Green: Discrete Diffusion
 
 Usage:
     python visualize_comparison.py
@@ -50,10 +51,11 @@ def extract_lang_size_from_path(model_dir: str) -> Tuple[Optional[str], Optional
     Expected paths like:
     - model_weights/5mb/GPT_eng_latn_5mb
     - model_weights/5mb/dropout_GPT_eng_latn_5mb
-    - model_weights_diffusion/10mb/diffusion_fra_latn_10mb
+    - model_weights_continuous_diffusion/10mb/continuous_diffusion_fra_latn_10mb
+    - model_weights_discrete_diffusion/10mb/discrete_diffusion_zho_hans_10mb
     
     Returns:
-        (lang, size, model_type, model_name) where model_type is 'gpt2' or 'diffusion'
+        (lang, size, model_type, model_name) where model_type is 'gpt2', 'continuous_diffusion', or 'discrete_diffusion'
     """
     parts = model_dir.rstrip('/').split('/')
     
@@ -69,8 +71,13 @@ def extract_lang_size_from_path(model_dir: str) -> Tuple[Optional[str], Optional
     model_name = parts[-1]
     
     # Determine model type
-    if 'diffusion' in model_name:
-        model_type = 'diffusion'
+    if 'discrete_diffusion' in model_name:
+        model_type = 'discrete_diffusion'
+    elif 'continuous_diffusion' in model_name:
+        model_type = 'continuous_diffusion'
+    elif 'diffusion' in model_name:
+        # Fallback for old naming convention - treat as continuous
+        model_type = 'continuous_diffusion'
     else:
         model_type = 'gpt2'
     
@@ -85,7 +92,7 @@ def extract_lang_size_from_path(model_dir: str) -> Tuple[Optional[str], Optional
         # Try to extract language code (assumes format: *_LANG_SIZE)
         parts_split = model_name.split('_')
         if len(parts_split) >= 2:
-            lang = '_'.join([p for p in parts_split if p not in ['GPT', 'dropout', 'diffusion', size]])
+            lang = '_'.join([p for p in parts_split if p not in ['GPT', 'dropout', 'diffusion', 'continuous', 'discrete', size]])
         else:
             lang = model_name
     
@@ -94,7 +101,8 @@ def extract_lang_size_from_path(model_dir: str) -> Tuple[Optional[str], Optional
 
 def collect_evaluation_logs(
     gpt2_base_dir: str = "model_weights",
-    diffusion_base_dir: str = "model_weights_diffusion",
+    continuous_diffusion_base_dir: str = "model_weights_continuous_diffusion",
+    discrete_diffusion_base_dir: str = "model_weights_discrete_diffusion",
     lang_filter: Optional[str] = None,
     size_filter: Optional[str] = None
 ) -> Dict[str, Dict[str, Dict[str, List[Dict]]]]:
@@ -106,9 +114,16 @@ def collect_evaluation_logs(
     """
     logs = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
     
-    for base_dir, model_type in [(gpt2_base_dir, 'gpt2'), (diffusion_base_dir, 'diffusion')]:
+    # Also check old directory name for backwards compatibility
+    dirs_to_check = [
+        (gpt2_base_dir, 'gpt2'),
+        (continuous_diffusion_base_dir, 'continuous_diffusion'),
+        (discrete_diffusion_base_dir, 'discrete_diffusion'),
+        ('model_weights_diffusion', 'continuous_diffusion'),  # Fallback for old naming
+    ]
+    
+    for base_dir, model_type in dirs_to_check:
         if not os.path.isdir(base_dir):
-            print(f"Warning: Directory not found: {base_dir}")
             continue
         
         # Walk through all model directories
@@ -135,6 +150,10 @@ def collect_evaluation_logs(
                 
                 if lang_filter and lang != lang_filter:
                     continue
+                
+                # Use detected type from path if more specific
+                if detected_type != "unknown":
+                    model_type = detected_type
                 
                 # Load evaluation records
                 records = load_eval_records(model_dir)
@@ -184,7 +203,7 @@ def plot_comparison(
     elif num_metrics == 1:
         axes = axes.reshape(-1, 1) if hasattr(axes, 'reshape') else np.array([axes]).reshape(-1, 1)
     
-    fig.suptitle("Model Comparison: Autoregressive (GPT2) vs Diffusion", fontsize=16, fontweight='bold')
+    fig.suptitle("Model Comparison: Autoregressive (GPT2) vs Continuous Diffusion vs Discrete Diffusion", fontsize=16, fontweight='bold')
     
     # Iterate through all languages and create subplots
     for lang_idx, lang in enumerate(languages):
@@ -193,11 +212,13 @@ def plot_comparison(
         for size_idx, size in enumerate(sizes):
             # Get data for this language/size combination
             gpt2_data = logs[lang][size].get('gpt2', [])
-            diffusion_data = logs[lang][size].get('diffusion', [])
+            continuous_data = logs[lang][size].get('continuous_diffusion', [])
+            discrete_data = logs[lang][size].get('discrete_diffusion', [])
             
             # Sort by step
             gpt2_data = sorted(gpt2_data, key=lambda x: x.get('step', 0))
-            diffusion_data = sorted(diffusion_data, key=lambda x: x.get('step', 0))
+            continuous_data = sorted(continuous_data, key=lambda x: x.get('step', 0))
+            discrete_data = sorted(discrete_data, key=lambda x: x.get('step', 0))
             
             for metric_idx, metric in enumerate(metrics):
                 ax = axes[size_idx, metric_idx]
@@ -208,14 +229,20 @@ def plot_comparison(
                     gpt2_steps = [d.get('step', 0) for d in gpt2_data if 'log_ppl' in d]
                     gpt2_ppls = [d.get('log_ppl') for d in gpt2_data if 'log_ppl' in d]
                     
-                    diffusion_steps = [d.get('step', 0) for d in diffusion_data if 'log_ppl' in d]
-                    diffusion_ppls = [d.get('log_ppl') for d in diffusion_data if 'log_ppl' in d]
+                    continuous_steps = [d.get('step', 0) for d in continuous_data if 'log_ppl' in d]
+                    continuous_ppls = [d.get('log_ppl') for d in continuous_data if 'log_ppl' in d]
+                    
+                    discrete_steps = [d.get('step', 0) for d in discrete_data if 'log_ppl' in d]
+                    discrete_ppls = [d.get('log_ppl') for d in discrete_data if 'log_ppl' in d]
                     
                     if gpt2_ppls:
                         ax.plot(gpt2_steps, gpt2_ppls, 'r-o', label='GPT2', linewidth=2, markersize=4)
                     
-                    if diffusion_ppls:
-                        ax.plot(diffusion_steps, diffusion_ppls, 'b-s', label='Diffusion', linewidth=2, markersize=4)
+                    if continuous_ppls:
+                        ax.plot(continuous_steps, continuous_ppls, 'b-s', label='Continuous Diffusion', linewidth=2, markersize=4)
+                    
+                    if discrete_ppls:
+                        ax.plot(discrete_steps, discrete_ppls, 'g-^', label='Discrete Diffusion', linewidth=2, markersize=4)
                     
                     ax.set_ylabel('Log Perplexity', fontweight='bold')
                     ax.set_title(f'{size} - Perplexity ({lang})')
@@ -225,14 +252,20 @@ def plot_comparison(
                     gpt2_steps = [d.get('step', 0) for d in gpt2_data if 'hellaswag_accuracy' in d]
                     gpt2_accs = [d.get('hellaswag_accuracy') for d in gpt2_data if 'hellaswag_accuracy' in d]
                     
-                    diffusion_steps = [d.get('step', 0) for d in diffusion_data if 'hellaswag_accuracy' in d]
-                    diffusion_accs = [d.get('hellaswag_accuracy') for d in diffusion_data if 'hellaswag_accuracy' in d]
+                    continuous_steps = [d.get('step', 0) for d in continuous_data if 'hellaswag_accuracy' in d]
+                    continuous_accs = [d.get('hellaswag_accuracy') for d in continuous_data if 'hellaswag_accuracy' in d]
+                    
+                    discrete_steps = [d.get('step', 0) for d in discrete_data if 'hellaswag_accuracy' in d]
+                    discrete_accs = [d.get('hellaswag_accuracy') for d in discrete_data if 'hellaswag_accuracy' in d]
                     
                     if gpt2_accs:
                         ax.plot(gpt2_steps, gpt2_accs, 'r-o', label='GPT2', linewidth=2, markersize=4)
                     
-                    if diffusion_accs:
-                        ax.plot(diffusion_steps, diffusion_accs, 'b-s', label='Diffusion', linewidth=2, markersize=4)
+                    if continuous_accs:
+                        ax.plot(continuous_steps, continuous_accs, 'b-s', label='Continuous Diffusion', linewidth=2, markersize=4)
+                    
+                    if discrete_accs:
+                        ax.plot(discrete_steps, discrete_accs, 'g-^', label='Discrete Diffusion', linewidth=2, markersize=4)
                     
                     ax.set_ylabel('HellaSwag Accuracy', fontweight='bold')
                     ax.set_title(f'{size} - HellaSwag ({lang})')
@@ -290,7 +323,7 @@ def plot_all_languages_grid(
     elif num_cols == 1:
         axes = axes.reshape(-1, 1) if hasattr(axes, 'reshape') else np.array([axes]).reshape(-1, 1)
     
-    fig.suptitle("Model Comparison: Autoregressive (GPT2) vs Diffusion\nRed=GPT2, Blue=Diffusion", 
+    fig.suptitle("Model Comparison: Autoregressive (GPT2) vs Continuous Diffusion vs Discrete Diffusion\nRed=GPT2, Blue=Continuous, Green=Discrete", 
                  fontsize=14, fontweight='bold')
     
     for lang_idx, lang in enumerate(languages):
@@ -300,11 +333,13 @@ def plot_all_languages_grid(
             size = sizes[i]
             # Get data for this language/size combination
             gpt2_data = logs[lang][size].get('gpt2', [])
-            diffusion_data = logs[lang][size].get('diffusion', [])
+            continuous_data = logs[lang][size].get('continuous_diffusion', [])
+            discrete_data = logs[lang][size].get('discrete_diffusion', [])
             
             # Sort by step
             gpt2_data = sorted(gpt2_data, key=lambda x: x.get('step', 0))
-            diffusion_data = sorted(diffusion_data, key=lambda x: x.get('step', 0))
+            continuous_data = sorted(continuous_data, key=lambda x: x.get('step', 0))
+            discrete_data = sorted(discrete_data, key=lambda x: x.get('step', 0))
             
             for j in range(len(metrics)):
                 metric = metrics[j]
@@ -320,13 +355,18 @@ def plot_all_languages_grid(
                     gpt2_steps = [d.get('step', 0) for d in gpt2_data if 'log_ppl' in d]
                     gpt2_ppls = [d.get('log_ppl') for d in gpt2_data if 'log_ppl' in d]
                     
-                    diffusion_steps = [d.get('step', 0) for d in diffusion_data if 'log_ppl' in d]
-                    diffusion_ppls = [d.get('log_ppl') for d in diffusion_data if 'log_ppl' in d]
+                    continuous_steps = [d.get('step', 0) for d in continuous_data if 'log_ppl' in d]
+                    continuous_ppls = [d.get('log_ppl') for d in continuous_data if 'log_ppl' in d]
+                    
+                    discrete_steps = [d.get('step', 0) for d in discrete_data if 'log_ppl' in d]
+                    discrete_ppls = [d.get('log_ppl') for d in discrete_data if 'log_ppl' in d]
                     
                     if gpt2_ppls:
                         ax.plot(gpt2_steps, gpt2_ppls, 'r-o', label='GPT2', linewidth=2, markersize=4)
-                    if diffusion_ppls:
-                        ax.plot(diffusion_steps, diffusion_ppls, 'b-s', label='Diffusion', linewidth=2, markersize=4)
+                    if continuous_ppls:
+                        ax.plot(continuous_steps, continuous_ppls, 'b-s', label='Continuous', linewidth=2, markersize=4)
+                    if discrete_ppls:
+                        ax.plot(discrete_steps, discrete_ppls, 'g-^', label='Discrete', linewidth=2, markersize=4)
                     
                     ax.set_ylabel('Log PPL', fontsize=9)
                     ax.set_title(f'{size} PPL', fontsize=10, fontweight='bold')
@@ -336,13 +376,18 @@ def plot_all_languages_grid(
                     gpt2_steps = [d.get('step', 0) for d in gpt2_data if 'hellaswag_accuracy' in d]
                     gpt2_accs = [d.get('hellaswag_accuracy') for d in gpt2_data if 'hellaswag_accuracy' in d]
                     
-                    diffusion_steps = [d.get('step', 0) for d in diffusion_data if 'hellaswag_accuracy' in d]
-                    diffusion_accs = [d.get('hellaswag_accuracy') for d in diffusion_data if 'hellaswag_accuracy' in d]
+                    continuous_steps = [d.get('step', 0) for d in continuous_data if 'hellaswag_accuracy' in d]
+                    continuous_accs = [d.get('hellaswag_accuracy') for d in continuous_data if 'hellaswag_accuracy' in d]
+                    
+                    discrete_steps = [d.get('step', 0) for d in discrete_data if 'hellaswag_accuracy' in d]
+                    discrete_accs = [d.get('hellaswag_accuracy') for d in discrete_data if 'hellaswag_accuracy' in d]
                     
                     if gpt2_accs:
                         ax.plot(gpt2_steps, gpt2_accs, 'r-o', label='GPT2', linewidth=2, markersize=4)
-                    if diffusion_accs:
-                        ax.plot(diffusion_steps, diffusion_accs, 'b-s', label='Diffusion', linewidth=2, markersize=4)
+                    if continuous_accs:
+                        ax.plot(continuous_steps, continuous_accs, 'b-s', label='Continuous', linewidth=2, markersize=4)
+                    if discrete_accs:
+                        ax.plot(discrete_steps, discrete_accs, 'g-^', label='Discrete', linewidth=2, markersize=4)
                     
                     ax.set_ylabel('Accuracy', fontsize=9)
                     ax.set_title(f'{size} HellaSwag', fontsize=10, fontweight='bold')
@@ -357,8 +402,10 @@ def plot_all_languages_grid(
                     if handles:
                         ax.legend(loc='best', fontsize=8)
         
+        print('lang', lang)
         # Add language label on the left
-        fig.text(0.02, 0.5 - lang_idx * (0.9 / num_rows), lang, 
+        print('lang_id', lang_idx)
+        fig.text(0.02, 0.75 - lang_idx * (0.9 / num_rows), lang, 
                 rotation=90, va='center', fontweight='bold', fontsize=12)
         
         col_idx += len(metrics)
@@ -437,7 +484,7 @@ def main():
                     if 'hellaswag_accuracy' in record:
                         available_metrics.add('hellaswag')
     
-    print(available_metrics)
+    print('available_metrics', available_metrics)
     
     # Filter requested metrics to only those available
     actual_metrics = [m for m in metrics if m in available_metrics]
@@ -455,10 +502,10 @@ def main():
     print(f"\nFound data for:")
     for lang in sorted(logs.keys()):
         for size in sorted(logs[lang].keys()):
-            print(logs[lang][size].get('gpt2', []))
             gpt2_count = len(logs[lang][size].get('gpt2', []))
-            diffusion_count = len(logs[lang][size].get('diffusion', []))
-            print(f"  {lang} - {size}: GPT2={gpt2_count} records, Diffusion={diffusion_count} records")
+            continuous_count = len(logs[lang][size].get('continuous_diffusion', []))
+            discrete_count = len(logs[lang][size].get('discrete_diffusion', []))
+            print(f"  {lang} - {size}: GPT2={gpt2_count}, Continuous={continuous_count}, Discrete={discrete_count}")
     
     # Create plots
     if args.layout == "grid":

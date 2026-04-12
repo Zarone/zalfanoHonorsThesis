@@ -1,0 +1,59 @@
+/Users/zacharya/Code/honorsThesis/final_project/models/DiscreteDiffusion/llada_discrete_model.py:122: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  self.transformer = nn.TransformerEncoder(
+Training DISCRETE_DIFFUSION models with evaluation type: flores200_perplexity
+Output directory: model_weights_discrete_diffusion/
+
+============================================================
+Processing SMALL models for 5MB
+============================================================
+max_steps 1791 total_tokens 1222656 tokens_per_batch 4096 epochs 6
+model_size small
+config_path models/DiscreteDiffusion/discrete_diffusion_small_config.json
+  eng_latn: max_steps=1791, warmup_steps=179, batch_size=4, eval_steps=44
+    Training discrete_diffusion_eng_latn...
+NUM TRAINABLE MODEL PARAMETERS: 21020160
+Counting examples in training file (this may be slow)...
+0it [00:00, ?it/s]54it [00:00, 25221.87it/s]
+/Users/zacharya/Code/honorsThesis/final_project/.venv/lib/python3.14/site-packages/transformers/training_args.py:2301: UserWarning: `use_mps_device` is deprecated and will be removed in version 5.0 of 🤗 Transformers. `mps` device will be used by default if available similar to the way `cuda` device is used.Therefore, no action from user is required. 
+  warnings.warn(
+max_steps is given, it will override any value given in num_train_epochs
+Using auto half precision backend
+***** Running training *****
+  Num examples = 7,335,936
+  Num Epochs = 1
+  Instantaneous batch size per device = 4
+  Total train batch size (w. parallel, distributed & accumulation) = 4
+  Gradient Accumulation steps = 1
+  Total optimization steps = 1,791
+  Number of trainable parameters = 21,020,160
+Found 54 examples
+training args epoch 6
+  0%|          | 0/1791 [00:00<?, ?it/s]/Users/zacharya/Code/honorsThesis/final_project/.venv/lib/python3.14/site-packages/torch/utils/data/dataloader.py:775: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, device pinned memory won't be used.
+  super().__init__(loader)
+  0%|          | 1/1791 [00:04<2:15:38,  4.55s/it]  0%|          | 2/1791 [00:06<1:30:33,  3.04s/it]  0%|          | 3/1791 [00:08<1:14:53,  2.51s/it]  0%|          | 4/1791 [00:10<1:12:12,  2.42s/it]  0%|          | 5/1791 [00:12<1:05:00,  2.18s/it]  0%|          | 6/1791 [00:14<1:00:02,  2.02s/it]  0%|          | 7/1791 [00:15<56:50,  1.91s/it]    0%|          | 8/1791 [00:17<52:07,  1.75s/it]  1%|          | 9/1791 [00:18<50:06,  1.69s/it]  1%|          | 10/1791 [00:20<46:59,  1.58s/it]  1%|          | 11/1791 [00:21<44:57,  1.52s/it]  1%|          | 12/1791 [00:22<43:35,  1.47s/it]  1%|          | 13/1791 [00:24<42:22,  1.43s/it]  1%|          | 14/1791 [00:26<46:15,  1.56s/it]  1%|          | 15/1791 [00:27<48:46,  1.65s/it]  1%|          | 16/1791 [00:29<48:28,  1.64s/it]  1%|          | 17/1791 [00:31<47:38,  1.61s/it]  1%|          | 18/1791 [00:32<45:44,  1.55s/it]  1%|          | 19/1791 [00:34<46:31,  1.58s/it]  1%|          | 20/1791 [00:35<48:04,  1.63s/it]  1%|          | 21/1791 [00:37<50:13,  1.70s/it]  1%|          | 22/1791 [00:40<55:41,  1.89s/it]  1%|▏         | 23/1791 [00:42<56:55,  1.93s/it]  1%|▏         | 24/1791 [00:45<1:05:33,  2.23s/it]  1%|▏         | 25/1791 [00:48<1:12:01,  2.45s/it]  1%|▏         | 26/1791 [00:49<1:06:34,  2.26s/it]  2%|▏         | 27/1791 [00:51<1:00:08,  2.05s/it]  2%|▏         | 28/1791 [00:54<1:09:58,  2.38s/it]  2%|▏         | 29/1791 [00:58<1:23:23,  2.84s/it]  2%|▏         | 30/1791 [01:00<1:12:08,  2.46s/it]  2%|▏         | 31/1791 [01:01<1:03:12,  2.15s/it]  2%|▏         | 32/1791 [01:02<56:18,  1.92s/it]    2%|▏         | 33/1791 [01:04<52:10,  1.78s/it]  2%|▏         | 34/1791 [01:06<51:35,  1.76s/it]  2%|▏         | 35/1791 [01:07<52:58,  1.81s/it]  2%|▏         | 36/1791 [01:09<54:21,  1.86s/it]  2%|▏         | 37/1791 [01:11<54:22,  1.86s/it]  2%|▏         | 38/1791 [01:14<1:02:24,  2.14s/it]  2%|▏         | 39/1791 [01:18<1:21:32,  2.79s/it]  2%|▏         | 40/1791 [01:23<1:39:13,  3.40s/it]  2%|▏         | 41/1791 [01:28<1:52:57,  3.87s/it]  2%|▏         | 42/1791 [01:32<1:52:04,  3.84s/it]  2%|▏         | 43/1791 [01:39<2:17:23,  4.72s/it]  2%|▏         | 44/1791 [11:22<86:28:39, 178.20s/it]
+***** Running Evaluation *****
+  Num examples = 54
+  Batch size = 4
+correct 119
+len(dataset) 500
+Warning: Failed to save evaluation record: [Errno 2] No such file or directory: 'model_weights_discrete_diffusion/5mb/discrete_diffusion_eng_latn_5mb/eval_records.jsonl'
+[Eval] step=44 | epoch=0.00 | HellaSwag Accuracy=0.2380
+Warning: Invalid label indices in unmasked positions, skipping unmasked loss
+
+  0%|          | 0/14 [00:00<?, ?it/s][A
+ 14%|█▍        | 2/14 [00:07<00:42,  3.54s/it][A
+ 21%|██▏       | 3/14 [00:15<00:59,  5.36s/it][A
+ 29%|██▊       | 4/14 [00:17<00:44,  4.46s/it][A
+ 36%|███▌      | 5/14 [00:23<00:42,  4.68s/it][A
+ 43%|████▎     | 6/14 [00:27<00:37,  4.73s/it][A
+ 50%|█████     | 7/14 [00:33<00:34,  4.87s/it][A
+ 57%|█████▋    | 8/14 [00:38<00:29,  4.91s/it][A
+ 64%|██████▍   | 9/14 [00:42<00:24,  4.84s/it][A
+ 71%|███████▏  | 10/14 [00:46<00:18,  4.55s/it][A
+ 79%|███████▊  | 11/14 [00:49<00:11,  3.90s/it][A
+ 86%|████████▌ | 12/14 [00:52<00:07,  3.78s/it][A
+ 93%|█████████▎| 13/14 [00:54<00:03,  3.34s/it][A
+100%|██████████| 14/14 [01:00<00:00,  4.06s/it][A                                                     
+                                               [A  2%|▏         | 44/1791 [12:32<86:28:39, 178.20s/it]
+100%|██████████| 14/14 [01:01<00:00,  4.06s/it][A
+                                               [A  3%|▎         | 45/1791 [12:46<72:48:01, 150.10s/it]  3%|▎         | 46/1791 [13:01<53:07:49, 109.61s/it]  3%|▎         | 47/1791 [13:26<40:45:12, 84.12s/it]   3%|▎         | 48/1791 [13:45<31:15:20, 64.56s/it]  3%|▎         | 49/1791 [14:24<27:32:13, 56.91s/it]  3%|▎         | 50/1791 [14:39<21:24:42, 44.28s/it]  3%|▎         | 51/1791 [15:02<18:21:09, 37.97s/it]  3%|▎         | 52/1791 [15:39<18:10:39, 37.63s/it]  3%|▎         | 53/1791 [16:39<21:27:53, 44.46s/it]  3%|▎         | 54/1791 [17:03<18:27:27, 38.25s/it]  3%|▎         | 55/1791 [17:40<18:14:10, 37.82s/it]  3%|▎         | 56/1791 [17:59<15:27:50, 32.09s/it]  3%|▎         | 57/1791 [18:40<16:44:13, 34.75s/it]  3%|▎         | 58/1791 [19:08<15:48:59, 32.86s/it]  3%|▎         | 59/1791 [19:24<13:19:42, 27.70s/it]  3%|▎         | 60/1791 [20:08<15:42:49, 32.68s/it]
