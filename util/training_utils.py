@@ -378,13 +378,13 @@ def unified_train_all(
         print('config_path', config_path)
         batch_per_device, gradient_accumulation_steps = get_grad_accum_fn(batch_size)
         eval_steps = get_eval_steps_fn(dataset_size, max_steps, config)
-        
+
         print(f"  {lang}: max_steps={max_steps}, warmup_steps={warmup_steps}, "
               f"batch_size={batch_per_device}, eval_steps={eval_steps}")
-        
+
         # Get training instances (may be multiple for dropout experiments)
         train_instances = get_train_instances_fn(config)
-        
+
         for dropout, model_output_dir, model_name in train_instances:
             print(f"    Training {model_name}...")
             train_fn(
@@ -403,19 +403,19 @@ def unified_train_all(
                 eval_steps=eval_steps,
                 evaluation_type=eval_type
             )
-    
+
     # Iterate over all language-dataset combinations
     for dataset_size in dataset_sizes:
         model_size = select_model_size(dataset_size)
         langs = lang_sets[dataset_size]
-        
+
         print(f"\n{'='*60}")
         print(f"Processing {model_size.upper()} models for {dataset_size.upper()}")
         print(f"{'='*60}")
-        
+
         for lang in langs:
             batch_size = hyperparams.batch_sizes[dataset_size]
-            
+
             train_data_path = dataset_config.get_train_path(lang, dataset_size)
             eval_data_path = dataset_config.get_eval_path(lang)
             tokenizer_path = get_tokenizer_path_fn(lang, dataset_size, dataset_config)
@@ -954,11 +954,11 @@ def unified_train(
         num_train_epochs=epochs,
         output_dir=output_dir,
         overwrite_output_dir=False,
-        per_device_eval_batch_size=batch_size,
-        per_device_train_batch_size=batch_size,
+        per_device_eval_batch_size=batch_size // 2,
+        per_device_train_batch_size=batch_size // 2,
         remove_unused_columns=False,
         resume_from_checkpoint=last_checkpoint,
-        save_steps=200,
+        save_steps=100,
         save_strategy=IntervalStrategy.STEPS,
         save_total_limit=2,
         seed=seed,

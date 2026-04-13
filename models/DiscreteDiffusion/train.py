@@ -23,8 +23,8 @@ def train(
     warmup_steps,
     epochs,
     dropout,
-    gradient_accumulation_steps=1,
-    batch_size=4,
+    gradient_accumulation_steps=4,
+    batch_size=1,
     eval_steps=40,
     evaluation_type="flores200_perplexity",
 ):

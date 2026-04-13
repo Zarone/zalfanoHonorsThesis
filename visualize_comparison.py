@@ -203,7 +203,7 @@ def plot_comparison(
     elif num_metrics == 1:
         axes = axes.reshape(-1, 1) if hasattr(axes, 'reshape') else np.array([axes]).reshape(-1, 1)
     
-    fig.suptitle("Model Comparison: Autoregressive (GPT2) vs Continuous Diffusion vs Discrete Diffusion", fontsize=16, fontweight='bold')
+    fig.suptitle("Model Comparison: Autoregressive (GPT2) vs Discrete Diffusion", fontsize=16, fontweight='bold')
     
     # Iterate through all languages and create subplots
     for lang_idx, lang in enumerate(languages):
@@ -323,7 +323,7 @@ def plot_all_languages_grid(
     elif num_cols == 1:
         axes = axes.reshape(-1, 1) if hasattr(axes, 'reshape') else np.array([axes]).reshape(-1, 1)
     
-    fig.suptitle("Model Comparison: Autoregressive (GPT2) vs Continuous Diffusion vs Discrete Diffusion\nRed=GPT2, Blue=Continuous, Green=Discrete", 
+    fig.suptitle("Model Comparison: Autoregressive (GPT2) vs Discrete Diffusion\nRed=GPT2, Green=Discrete", 
                  fontsize=14, fontweight='bold')
     
     for lang_idx, lang in enumerate(languages):

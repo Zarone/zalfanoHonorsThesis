@@ -14,6 +14,7 @@ Reference: "LLaDA: Large Language Diffusion with mAsking" (arxiv 2502.09992)
 
 import torch
 import torch.nn as nn
+import torch.utils.checkpoint
 import math
 from dataclasses import dataclass
 from typing import Dict, Optional, Tuple, Union
@@ -122,8 +123,9 @@ class MaskingSchedule(nn.Module):
         # Sample a Bernoulli mask
         mask = torch.bernoulli(mask_ratio).bool()
 
-        x_t = input_ids.clone()
-        x_t[mask] = mask_token_id
+        # Avoid in-place operations for better MPS memory management:
+        # Use torch.where instead of clone + in-place indexing
+        x_t = torch.where(mask, torch.full_like(input_ids, mask_token_id), input_ids)
 
         return x_t, mask
 
@@ -173,6 +175,9 @@ class DenoisingNetwork(nn.Module):
 
         # Output projection back to hidden size (lm_head projects further to vocab)
         self.output_projection = nn.Linear(config.hidden_size, config.hidden_size)
+        
+        # Gradient checkpointing flag
+        self.gradient_checkpointing = False
 
     def forward(
         self,
@@ -209,7 +214,22 @@ class DenoisingNetwork(nn.Module):
 
         # Transformer with pre-norm
         x = self.norm1(x)
-        x = self.transformer(x, src_key_padding_mask=src_key_padding_mask)
+        
+        # Apply gradient checkpointing if enabled (and in training mode)
+        if self.gradient_checkpointing and self.training:
+            def create_custom_forward(module):
+                def custom_forward(*inputs):
+                    return module(*inputs)
+                return custom_forward
+            
+            x = torch.utils.checkpoint.checkpoint(
+                create_custom_forward(self.transformer),
+                x,
+                src_key_padding_mask,
+                use_reentrant=False,
+            )
+        else:
+            x = self.transformer(x, src_key_padding_mask=src_key_padding_mask)
 
         # Project and add residual
         x = self.output_projection(x)
@@ -280,6 +300,15 @@ class DiscreteDiffusionLanguageModel(PreTrainedModel):
         bsz, seq_len = input_ids.shape[:2]
         positions = torch.arange(seq_len, dtype=torch.long, device=input_ids.device)
         return positions.unsqueeze(0).expand(bsz, -1)
+
+    def _set_gradient_checkpointing(self, module, value=False):
+        """Enable/disable gradient checkpointing for the denoising network."""
+        # Set on the denoising network
+        if hasattr(self, "denoising_network"):
+            self.denoising_network.gradient_checkpointing = value
+        # Also set on any module passed in (for compatibility with Trainer)
+        if hasattr(module, "gradient_checkpointing"):
+            module.gradient_checkpointing = value
 
     # ------------------------------------------------------------------
     # Forward

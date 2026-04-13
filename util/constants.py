@@ -88,7 +88,7 @@ langs_100mb = ['zho_hans']
 langs_1000mb = ['eng_latn', 'fra_latn']
 """
 # langs_5mb = []
-langs_5mb = ['eng_latn', 'zho_hans']
+langs_5mb = ['fra_latn']
 # langs_5mb = ['eng_latn', 'fra_latn', 'zho_hans']
 # langs_10mb = ['eng_latn', 'fra_latn', 'zho_hans']
 langs_10mb = []

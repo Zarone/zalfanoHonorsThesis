@@ -196,8 +196,8 @@ class DenoisingNetwork(nn.Module):
         # Project to output
         x = self.output_projection(x)
         
-        # Residual connection
-        return x_t + x
+        # Return predicted noise (no residual—we predict the noise, not the denoised embedding)
+        return x
 
 
 class ContinuousDiffusionLanguageModel(PreTrainedModel):
@@ -315,6 +315,50 @@ class ContinuousDiffusionLanguageModel(PreTrainedModel):
             # Inference mode: iterative denoising
             return self._inference_forward(x_0, attention_mask, device)
     
+    def _iterative_denoise(
+        self,
+        batch_size: int,
+        seq_len: int,
+        device: torch.device,
+        attention_mask: Optional[torch.Tensor] = None,
+    ) -> torch.Tensor:
+        """
+        Iterative denoising for evaluation: full T-step DDIM process.
+        Measures actual perplexity by evaluating the model's full output.
+        
+        Returns:
+            Denoised embeddings [batch, seq_len, hidden_size]
+        """
+        # Start from pure noise
+        x_t = torch.randn(batch_size, seq_len, self.hidden_size, device=device) * self.config.noise_scale
+        
+        with torch.no_grad():
+            for step in reversed(range(self.config.num_diffusion_steps)):
+                t = torch.full((batch_size,), step, dtype=torch.long, device=device)
+                
+                # Predict noise at this timestep
+                predicted_noise = self.denoising_network(x_t, t, attention_mask)
+                
+                # DDIM reverse step
+                alpha_t = self.noise_schedule.alphas_cumprod[step]
+                alpha_prev = self.noise_schedule.alphas_cumprod_prev[step]
+                
+                sqrt_alpha_t = math.sqrt(alpha_t)
+                sqrt_one_minus_alpha_t = math.sqrt(1.0 - alpha_t)
+                sqrt_alpha_prev = math.sqrt(alpha_prev)
+                sqrt_one_minus_alpha_prev = math.sqrt(1.0 - alpha_prev)
+                
+                # Predict x_0
+                x_0_pred = (x_t - sqrt_one_minus_alpha_t * predicted_noise) / sqrt_alpha_t
+                
+                # Compute x_{t-1}
+                x_t = (
+                    sqrt_alpha_prev * x_0_pred +
+                    sqrt_one_minus_alpha_prev * predicted_noise
+                )
+        
+        return x_t
+    
     def _training_forward(
         self,
         x_0: torch.Tensor,
@@ -322,7 +366,7 @@ class ContinuousDiffusionLanguageModel(PreTrainedModel):
         labels: torch.Tensor,
         device: torch.device,
     ):
-        """Training forward pass with diffusion loss."""
+        """Training forward pass with diffusion loss and evaluation perplexity."""
         batch_size, seq_len = x_0.shape[:2]
         
         # Sample random timesteps
@@ -334,28 +378,32 @@ class ContinuousDiffusionLanguageModel(PreTrainedModel):
         # Forward diffusion: x_t = sqrt(alpha_t) * x_0 + sqrt(1 - alpha_t) * noise
         x_t = self.noise_schedule.q_sample(x_0, t, noise)
         
-        # Denoise
+        # Denoise: predict the noise
         predicted_noise = self.denoising_network(x_t, t, attention_mask)
         
-        # Compute diffusion loss (predict noise)
-        loss = torch.nn.functional.mse_loss(predicted_noise, noise, reduction='mean')
+        # Compute diffusion loss (predict noise) — training objective
+        diffusion_loss = torch.nn.functional.mse_loss(predicted_noise, noise, reduction='mean')
         
-        # Also compute token prediction loss on denoised embeddings
-        logits = self.lm_head(x_t)  # [batch, seq_len, vocab_size]
+        # For evaluation perplexity: do full iterative denoising (expensive but accurate)
+        x_0_denoised = self._iterative_denoise(batch_size, seq_len, device, attention_mask)
+        
+        # Compute token prediction loss on fully denoised embeddings (true perplexity)
+        logits = self.lm_head(x_0_denoised)  # [batch, seq_len, vocab_size]
         
         # Flatten for loss computation
         shift_logits = logits[..., :-1, :].contiguous()
         shift_labels = labels[..., 1:].contiguous()
         
-        # Compute cross-entropy loss
+        # Compute cross-entropy loss — this is the perplexity metric
         ce_loss = torch.nn.functional.cross_entropy(
             shift_logits.view(-1, self.config.vocab_size),
             shift_labels.view(-1),
             reduction='mean'
         )
         
-        # Combine losses
-        total_loss = loss + 0.1 * ce_loss
+        # Combine losses for optimization: primary is diffusion (MSE noise prediction), secondary is CE
+        # But ce_loss now reflects true generalization, not noisy embeddings
+        total_loss = diffusion_loss + 0.1 * ce_loss
         
         return CausalLMOutputWithPast(
             loss=total_loss,
